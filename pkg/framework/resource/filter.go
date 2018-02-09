@@ -18,97 +18,125 @@ package resource
 
 import (
 	"fmt"
+	"strings"
+
 	"k8s.io/kubectl/pkg/framework/merge"
 	"k8s.io/kubernetes/pkg/kubectl/apply"
-	"strings"
 )
 
+// Filter is used to filter resources and subresources within API resource lists.
 type Filter interface {
-	Resource(*Resource) bool
-	SubResource(*SubResource) bool
+	resource(*Resource) bool
+	subResource(*SubResource) bool
 }
 
-type EmptyFilter struct {
+// NewEmptyFilter returns a new emptyFilter.
+func NewEmptyFilter() Filter {
+	return &emptyFilter{}
 }
 
-func (*EmptyFilter) Resource(*Resource) bool {
+// NewAndFilter returns a new andFilter.
+func NewAndFilter() Filter {
+	return &andFilter{}
+}
+
+// NewSkipSubresourceFilter returns a new skipSubresourceFilter.
+func NewSkipSubresourceFilter() Filter {
+	return &skipSubresourceFilter{}
+}
+
+// NewOrFilter returns a new orFilter.
+func NewOrFilter() Filter {
+	return &orFilter{}
+}
+
+// NewFieldFilter returns a new fieldFilter.
+func NewFieldFilter(path []string) *fieldFilter {
+	return &fieldFilter{emptyFilter{}, path}
+}
+
+// NewPrefixStrategy returns a new prefixStrategy.
+func NewPrefixStrategy() prefixStrategy {
+	return prefixStrategy{}
+}
+
+type emptyFilter struct {
+}
+
+func (*emptyFilter) resource(*Resource) bool {
 	return true
 }
 
-func (*EmptyFilter) SubResource(*SubResource) bool {
+func (*emptyFilter) subResource(*SubResource) bool {
 	return true
 }
 
-type SkipSubresourceFilter struct {
-	EmptyFilter
+type skipSubresourceFilter struct {
+	emptyFilter
 }
 
-func (*SkipSubresourceFilter) SubResource(sr *SubResource) bool {
+func (*skipSubresourceFilter) subResource(sr *SubResource) bool {
 	return !strings.HasSuffix(sr.Resource.Name, "/status")
 }
 
-type AndFilter struct {
+type andFilter struct {
 	Filters []Filter
 }
 
-func (a *AndFilter) Resource(r *Resource) bool {
+func (a *andFilter) resource(r *Resource) bool {
 	for _, f := range a.Filters {
-		if !f.Resource(r) {
+		if !f.resource(r) {
 			return false
 		}
 	}
 	return true
 }
 
-func (a *AndFilter) SubResource(sr *SubResource) bool {
+func (a *andFilter) subResource(sr *SubResource) bool {
 	for _, f := range a.Filters {
-		if !f.SubResource(sr) {
+		if !f.subResource(sr) {
 			return false
 		}
 	}
 	return true
 }
 
-type OrFilter struct {
+type orFilter struct {
 	Filters []Filter
 }
 
-func (a *OrFilter) Resource(r *Resource) bool {
+func (a *orFilter) resource(r *Resource) bool {
 	for _, f := range a.Filters {
-		if f.Resource(r) {
+		if f.resource(r) {
 			return true
 		}
 	}
 	return false
 }
 
-func (a *OrFilter) SubResource(sr *SubResource) bool {
+func (a *orFilter) subResource(sr *SubResource) bool {
 	for _, f := range a.Filters {
-		if f.SubResource(sr) {
+		if f.subResource(sr) {
 			return true
 		}
 	}
 	return false
 }
 
-type FieldFilter struct {
-	EmptyFilter
+type fieldFilter struct {
+	emptyFilter
 	path []string
 }
 
-func NewFieldFilter(path []string) *FieldFilter {
-	return &FieldFilter{EmptyFilter{}, path}
-}
-
-func (f *FieldFilter) Resource(r *Resource) bool {
+func (f *fieldFilter) resource(r *Resource) bool {
 	return r.HasField(f.path)
 }
 
-type PrefixStrategy struct {
+type prefixStrategy struct {
 	merge.EmptyStrategy
 	prefix string
 }
 
-func (fs *PrefixStrategy) MergePrimitive(element apply.PrimitiveElement) (apply.Result, error) {
+func (fs *prefixStrategy) MergePrimitive(element apply.PrimitiveElement) (apply.Result, error) {
 	return apply.Result{MergedResult: fmt.Sprintf("%s%v", fs.prefix, element.GetRemote())}, nil
 }

@@ -38,7 +38,7 @@ func (r Resources) Filter(filter Filter) Resources {
 	filtered := Resources{}
 	for k, v := range r {
 		for _, version := range v {
-			if !filter.Resource(version) {
+			if !filter.resource(version) {
 				continue
 			}
 			copy := r.filterSubResources(*version, filter)
@@ -52,7 +52,7 @@ func (r Resources) Filter(filter Filter) Resources {
 func (r Resources) filterSubResources(resource Resource, filter Filter) Resource {
 	filtered := []*SubResource{}
 	for _, v := range resource.SubResources {
-		if !filter.SubResource(v) {
+		if !filter.subResource(v) {
 			continue
 		}
 		filtered = append(filtered, v)
