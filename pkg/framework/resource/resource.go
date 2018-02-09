@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	openapi "k8s.io/kube-openapi/pkg/util/proto"
 )
 
-// Resource is an API Resource
+// Resource is an API Resource.
 type Resource struct {
 	Resource        v1.APIResource
 	ApiGroupVersion schema.GroupVersion
@@ -30,23 +30,7 @@ type Resource struct {
 	SubResources []*SubResource
 }
 
-func (r *Resource) HasField(path []string) bool {
-	return hasField(r.Schema, path)
-}
-
-func (sr *Resource) Field(path []string, obj interface{}, fn ObjectFieldFn) (interface{}, error) {
-	return setField(sr.Schema, path, obj, fn)
-}
-
-func (r *Resource) APIGroupVersionKind() schema.GroupVersionKind {
-	return r.ApiGroupVersion.WithKind(r.Resource.Kind)
-}
-
-func (r *Resource) ResourceGroupVersionKind() schema.GroupVersionKind {
-	return schema.GroupVersionKind{r.Resource.Group, r.Resource.Version, r.Resource.Kind}
-}
-
-// SubResource is an API subresource
+// SubResource is an API subresource.
 type SubResource struct {
 	Resource        v1.APIResource
 	Parent          *Resource
@@ -54,18 +38,34 @@ type SubResource struct {
 	openapi.Schema
 }
 
+func (r *Resource) HasField(path []string) bool {
+	return hasField(r.Schema, path)
+}
+
 func (sr *SubResource) HasField(path []string) bool {
 	return hasField(sr.Schema, path)
+}
+
+func (r *Resource) Field(path []string, obj interface{}, fn ObjectFieldFn) (interface{}, error) {
+	return setField(r.Schema, path, obj, fn)
 }
 
 func (sr *SubResource) Field(path []string, obj interface{}, fn ObjectFieldFn) (interface{}, error) {
 	return setField(sr.Schema, path, obj, fn)
 }
 
-func (r *SubResource) APIGroupVersionKind() schema.GroupVersionKind {
+func (r *Resource) APIGroupVersionKind() schema.GroupVersionKind {
 	return r.ApiGroupVersion.WithKind(r.Resource.Kind)
 }
 
-func (r *SubResource) ResourceGroupVersionKind() schema.GroupVersionKind {
+func (sr *SubResource) APIGroupVersionKind() schema.GroupVersionKind {
+	return sr.ApiGroupVersion.WithKind(sr.Resource.Kind)
+}
+
+func (r *Resource) ResourceGroupVersionKind() schema.GroupVersionKind {
 	return schema.GroupVersionKind{r.Resource.Group, r.Resource.Version, r.Resource.Kind}
+}
+
+func (sr *SubResource) ResourceGroupVersionKind() schema.GroupVersionKind {
+	return schema.GroupVersionKind{sr.Resource.Group, sr.Resource.Version, sr.Resource.Kind}
 }

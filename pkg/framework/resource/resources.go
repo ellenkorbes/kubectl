@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,45 +20,43 @@ import (
 	"sort"
 )
 
-// Resources is the set of resources found in the API server
+// Resources is the set of resources found in the API server.
 type Resources map[string][]*Resource
 
-// Sort returns the resources sorted alphanumberically by their names
+// SortKeys returns the resources sorted alphanumerically by their names.
 func (r Resources) SortKeys() []string {
-	ordered := []string{}
-	for resource, _ := range r {
-		ordered = append(ordered, resource)
+	sorted := []string{}
+	for k, _ := range r {
+		sorted = append(sorted, k)
 	}
-	sort.Strings(ordered)
-	return ordered
+	sort.Strings(sorted)
+	return sorted
 }
 
-// Filter filters resources and subresources
+// Filter filters resources and subresources.
 func (r Resources) Filter(filter Filter) Resources {
-	value := Resources{}
-	for resource, versions := range r {
-		for _, version := range versions {
+	filtered := Resources{}
+	for k, v := range r {
+		for _, version := range v {
 			if !filter.Resource(version) {
 				continue
 			}
-
-			copy := r.filterSubresources(*version, filter)
-			value[resource] = append(value[resource], &copy)
+			copy := r.filterSubResources(*version, filter)
+			filtered[k] = append(filtered[k], &copy)
 		}
 	}
-
-	return value
+	return filtered
 }
 
-// filterSubresources returns a copy of resource with the subresources filtered
-func (r Resources) filterSubresources(resource Resource, filter Filter) Resource {
-	original := resource.SubResources
-	resource.SubResources = nil
-	for _, subresource := range original {
-		if !filter.SubResource(subresource) {
+// filterSubresources returns a copy of resource with the subresources filtered.
+func (r Resources) filterSubResources(resource Resource, filter Filter) Resource {
+	filtered := []*SubResource{}
+	for _, v := range resource.SubResources {
+		if !filter.SubResource(v) {
 			continue
 		}
-		resource.SubResources = append(resource.SubResources, subresource)
+		filtered = append(filtered, v)
 	}
+	resource.SubResources = filtered
 	return resource
 }
