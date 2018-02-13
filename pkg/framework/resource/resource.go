@@ -54,18 +54,22 @@ func (sr *SubResource) Field(path []string, obj interface{}, fn ObjectFieldFn) (
 	return setField(sr.Schema, path, obj, fn)
 }
 
+// APIGroupVersionKind creates a GroupVersionKind object based on the GroupVersion and the Kind of the Resource at hand.
 func (r *Resource) APIGroupVersionKind() schema.GroupVersionKind {
 	return r.ApiGroupVersion.WithKind(r.Resource.Kind)
 }
 
+// APIGroupVersionKind creates a GroupVersionKind object based on the GroupVersion and the Kind of the SubResource at hand.
 func (sr *SubResource) APIGroupVersionKind() schema.GroupVersionKind {
 	return sr.ApiGroupVersion.WithKind(sr.Resource.Kind)
 }
 
+// ResourceGroupVersionKind returns a GVK object based on the Resource at hand.
 func (r *Resource) ResourceGroupVersionKind() schema.GroupVersionKind {
 	return schema.GroupVersionKind{r.Resource.Group, r.Resource.Version, r.Resource.Kind}
 }
 
+// ResourceGroupVersionKind returns a GVK object based on the SubResource at hand.
 func (sr *SubResource) ResourceGroupVersionKind() schema.GroupVersionKind {
 	return schema.GroupVersionKind{sr.Resource.Group, sr.Resource.Version, sr.Resource.Kind}
 }

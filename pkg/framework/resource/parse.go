@@ -49,7 +49,7 @@ func NewParser() Parser {
 }
 
 // Resources discovers and indexes resources from the API server.
-// It returns a map of resource name to resources matching that name ordered by preference as reported by the server.
+// It returns a Resources object: a map of resource names and their associated Resource objects, ordered by preference as reported by the server.
 func (p *Parser) Resources() (Resources, error) {
 	gvs, err := p.discovery.ServerResources()
 	if err != nil {

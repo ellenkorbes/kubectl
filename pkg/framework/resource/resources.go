@@ -33,12 +33,12 @@ func (r Resources) SortKeys() []string {
 	return sorted
 }
 
-// Filter filters resources and subresources.
+// Filter takes a Filter interface which is used to filter the resources and/or subresources in a Resources object. It returns a new Resources object.
 func (r Resources) Filter(filter Filter) Resources {
 	filtered := Resources{}
 	for k, v := range r {
 		for _, version := range v {
-			if !filter.resource(version) {
+			if !filter.Resource(version) {
 				continue
 			}
 			copy := r.filterSubResources(*version, filter)
@@ -52,7 +52,7 @@ func (r Resources) Filter(filter Filter) Resources {
 func (r Resources) filterSubResources(resource Resource, filter Filter) Resource {
 	filtered := []*SubResource{}
 	for _, v := range resource.SubResources {
-		if !filter.subResource(v) {
+		if !filter.SubResource(v) {
 			continue
 		}
 		filtered = append(filtered, v)

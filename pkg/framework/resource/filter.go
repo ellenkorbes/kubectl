@@ -24,10 +24,10 @@ import (
 	"k8s.io/kubernetes/pkg/kubectl/apply"
 )
 
-// Filter is used to filter resources and subresources within API resource lists.
+// Filter is an interface whose methods are used to arbitrarily filter resources and subresources in a Resources object. Filtering criteria can be anything at all, so long as the "accepted" resources return true, and the filtered out resources return false.
 type Filter interface {
-	resource(*Resource) bool
-	subResource(*SubResource) bool
+	Resource(*Resource) bool
+	SubResource(*SubResource) bool
 }
 
 // NewEmptyFilter returns a new emptyFilter.
@@ -35,7 +35,7 @@ func NewEmptyFilter() Filter {
 	return &emptyFilter{}
 }
 
-// NewAndFilter returns a new andFilter.
+// NewAndFilter returns a new andFilter. An andFilter contains the Filters field, a slice of filters which then work as a logical AND.
 func NewAndFilter() Filter {
 	return &andFilter{}
 }
@@ -45,13 +45,13 @@ func NewSkipSubresourceFilter() Filter {
 	return &skipSubresourceFilter{}
 }
 
-// NewOrFilter returns a new orFilter.
+// NewOrFilter returns a new orFilter. An orFilter contains the Filters field, a slice of filters which then work as a logical OR.
 func NewOrFilter() Filter {
 	return &orFilter{}
 }
 
-// NewFieldFilter returns a new fieldFilter.
-func NewFieldFilter(path []string) *fieldFilter {
+// NewFieldFilter returns a new fieldFilter. It filters based on the fields contained in the slice of string it takes as an argument.
+func NewFieldFilter(path []string) Filter {
 	return &fieldFilter{emptyFilter{}, path}
 }
 
@@ -63,11 +63,11 @@ func NewPrefixStrategy() prefixStrategy {
 type emptyFilter struct {
 }
 
-func (*emptyFilter) resource(*Resource) bool {
+func (*emptyFilter) Resource(*Resource) bool {
 	return true
 }
 
-func (*emptyFilter) subResource(*SubResource) bool {
+func (*emptyFilter) SubResource(*SubResource) bool {
 	return true
 }
 
@@ -75,7 +75,7 @@ type skipSubresourceFilter struct {
 	emptyFilter
 }
 
-func (*skipSubresourceFilter) subResource(sr *SubResource) bool {
+func (*skipSubresourceFilter) SubResource(sr *SubResource) bool {
 	return !strings.HasSuffix(sr.Resource.Name, "/status")
 }
 
@@ -83,18 +83,18 @@ type andFilter struct {
 	Filters []Filter
 }
 
-func (a *andFilter) resource(r *Resource) bool {
+func (a *andFilter) Resource(r *Resource) bool {
 	for _, f := range a.Filters {
-		if !f.resource(r) {
+		if !f.Resource(r) {
 			return false
 		}
 	}
 	return true
 }
 
-func (a *andFilter) subResource(sr *SubResource) bool {
+func (a *andFilter) SubResource(sr *SubResource) bool {
 	for _, f := range a.Filters {
-		if !f.subResource(sr) {
+		if !f.SubResource(sr) {
 			return false
 		}
 	}
@@ -105,18 +105,18 @@ type orFilter struct {
 	Filters []Filter
 }
 
-func (a *orFilter) resource(r *Resource) bool {
+func (a *orFilter) Resource(r *Resource) bool {
 	for _, f := range a.Filters {
-		if f.resource(r) {
+		if f.Resource(r) {
 			return true
 		}
 	}
 	return false
 }
 
-func (a *orFilter) subResource(sr *SubResource) bool {
+func (a *orFilter) SubResource(sr *SubResource) bool {
 	for _, f := range a.Filters {
-		if f.subResource(sr) {
+		if f.SubResource(sr) {
 			return true
 		}
 	}
@@ -128,7 +128,7 @@ type fieldFilter struct {
 	path []string
 }
 
-func (f *fieldFilter) resource(r *Resource) bool {
+func (f *fieldFilter) Resource(r *Resource) bool {
 	return r.HasField(f.path)
 }
 
